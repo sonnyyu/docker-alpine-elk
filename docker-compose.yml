@@ -1,0 +1,58 @@
+version: '3.7'
+networks:
+  elk:
+volumes:
+  elasticsearch:
+  pipeline:
+services:
+  elasticsearch:
+    image: elasticsearch
+    hostname: elasticsearch
+    build:
+      context: ./elasticsearch
+      dockerfile: Dockerfile
+    container_name: elasticsearch
+    environment:
+      http.host: 0.0.0.0
+      transport.host: 127.0.0.1
+    networks:
+      elk: null
+    ports:
+    - 9200:9200
+    restart: unless-stopped
+    volumes:
+    - elasticsearch:/usr/share/elasticsearch/data:rw
+  logstash:
+    image: logstash
+    hostname: logstash
+    build:
+      context: ./logstash
+      dockerfile: Dockerfile
+    container_name: logstash
+    depends_on:
+    - elasticsearch
+    networks:
+      elk: null
+    ports:
+    - 5044:5044
+    restart: unless-stopped
+    volumes:
+    - pipeline:/usr/share/logstash/pipeline:ro
+  kibana:
+    image: kibana
+    hostname: kibana
+    build:
+      context: ./kibana
+      dockerfile: Dockerfile
+    container_name: kibana
+    depends_on:
+    - elasticsearch
+    environment:
+      ELASTICSEARCH_PASSWORD: changeme
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_USERNAME: elastic
+    networks:
+      elk: null
+    ports:
+    - 5601:5601
+    restart: unless-stopped
